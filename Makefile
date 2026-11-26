@@ -1,9 +1,10 @@
-.PHONY: all clean
+CXX = g++
+CXXFLAGS = -O2 -std=c++17 -w
 
 all: code
 
 code: code.cpp
-	g++ -O2 -march=native -o code code.cpp
+	$(CXX) $(CXXFLAGS) -o code code.cpp
 
 clean:
 	rm -f code
