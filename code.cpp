@@ -1,64 +1,77 @@
 #include <cstdio>
 #include <algorithm>
-#include <vector>
+#include <cstring>
 
 using namespace std;
 
-// Union-Find with path compression and union by rank (array-based for speed)
-struct DSU {
-    int *parent, *rnk;
-    DSU(int n) {
-        parent = new int[n];
-        rnk = new int[n];
-        for (int i = 0; i < n; i++) {
-            parent[i] = i;
-            rnk[i] = 0;
-        }
+// Fast I/O with buffer refilling
+static const int BUFSZ = 1 << 20;
+static char ibuf[BUFSZ];
+static char *iptr = ibuf + BUFSZ;
+static int ibuf_left = 0;
+
+inline void io_init() {
+    ibuf_left = (int)fread(ibuf, 1, BUFSZ, stdin);
+    iptr = ibuf;
+}
+
+inline int read_int() {
+    int x = 0;
+    while (iptr - ibuf >= ibuf_left) {
+        // Refill buffer
+        ibuf_left = (int)fread(ibuf, 1, BUFSZ, stdin);
+        iptr = ibuf;
+        if (ibuf_left == 0) break;
     }
-    ~DSU() {
-        delete[] parent;
-        delete[] rnk;
+    while (*iptr < '0' || *iptr > '9') iptr++;
+    while (*iptr >= '0' && *iptr <= '9') {
+        x = x * 10 + (*iptr++ - '0');
     }
-    int find(int x) {
-        // Path compression
-        int root = x;
-        while (parent[root] != root) root = parent[root];
-        while (parent[x] != root) {
-            int tmp = parent[x];
-            parent[x] = root;
-            x = tmp;
-        }
-        return root;
+    return x;
+}
+
+// DSU with flat arrays and path compression only
+static int dsu_parent[4000005];
+
+inline void dsu_init(int n) {
+    for (int i = 0; i < n; i++) dsu_parent[i] = i;
+}
+
+inline int dsu_find(int x) {
+    while (dsu_parent[x] != x) {
+        dsu_parent[x] = dsu_parent[dsu_parent[x]]; // path halving
+        x = dsu_parent[x];
     }
-    void unite(int a, int b) {
-        a = find(a); b = find(b);
-        if (a == b) return;
-        if (rnk[a] < rnk[b]) { int t = a; a = b; b = t; }
-        parent[b] = a;
-        if (rnk[a] == rnk[b]) rnk[a]++;
-    }
-};
+    return x;
+}
+
+inline void dsu_union(int a, int b) {
+    a = dsu_find(a);
+    b = dsu_find(b);
+    if (a != b) dsu_parent[a] = b;
+}
 
 struct Constraint {
     int u, v, eq;
 };
 
+static Constraint cons[2000005];
+static int coords[4000005];
+static int cu[2000005], cv[2000005], ceq[2000005];
+
 void solve() {
-    int n;
-    scanf("%d", &n);
+    int n = read_int();
     
-    // Collect all variable indices for coordinate compression
-    static int coords[4000005];
     int coord_count = 0;
-    
-    static Constraint cons[2000005];
     for (int k = 0; k < n; k++) {
-        scanf("%d %d %d", &cons[k].u, &cons[k].v, &cons[k].eq);
+        cons[k].u = read_int();
+        cons[k].v = read_int();
+        cons[k].eq = read_int();
         coords[coord_count++] = cons[k].u;
         coords[coord_count++] = cons[k].v;
     }
     
-    // Sort and unique for coordinate compression
+    // Sort and unique
     sort(coords, coords + coord_count);
     int uniq_count = 1;
     for (int i = 1; i < coord_count; i++) {
@@ -67,33 +80,18 @@ void solve() {
         }
     }
     
-    // Binary search for compressed index
-    auto get_id = [&](int val) -> int {
-        int lo = 0, hi = uniq_count - 1;
-        while (lo <= hi) {
-            int mid = (lo + hi) >> 1;
-            if (coords[mid] == val) return mid;
-            else if (coords[mid] < val) lo = mid + 1;
-            else hi = mid - 1;
-        }
-        return -1;
-    };
-    
-    // Build compressed constraints
-    static int cu[2000005], cv[2000005], ceq[2000005];
+    // Use lower_bound for coordinate compression
     for (int k = 0; k < n; k++) {
-        cu[k] = get_id(cons[k].u);
-        cv[k] = get_id(cons[k].v);
+        cu[k] = (int)(lower_bound(coords, coords + uniq_count, cons[k].u) - coords);
+        cv[k] = (int)(lower_bound(coords, coords + uniq_count, cons[k].v) - coords);
         ceq[k] = cons[k].eq;
     }
     
-    int num_vars = uniq_count;
-    
     // Process equality constraints first
-    DSU dsu(num_vars);
+    dsu_init(uniq_count);
     for (int k = 0; k < n; k++) {
         if (ceq[k] == 1) {
-            dsu.unite(cu[k], cv[k]);
+            dsu_union(cu[k], cv[k]);
         }
     }
     
@@ -101,7 +99,7 @@ void solve() {
     bool ok = true;
     for (int k = 0; k < n; k++) {
         if (ceq[k] == 0) {
-            if (dsu.find(cu[k]) == dsu.find(cv[k])) {
+            if (dsu_find(cu[k]) == dsu_find(cv[k])) {
                 ok = false;
                 break;
             }
@@ -112,8 +110,8 @@ void solve() {
 }
 
 int main() {
-    int t;
-    scanf("%d", &t);
+    io_init();
+    int t = read_int();
     while (t--) {
         solve();
     }
