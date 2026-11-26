@@ -17,13 +17,20 @@ inline void io_init() {
 
 inline int read_int() {
     int x = 0;
+    // Skip non-digit characters
     while (iptr - ibuf >= ibuf_left) {
-        // Refill buffer
         ibuf_left = (int)fread(ibuf, 1, BUFSZ, stdin);
         iptr = ibuf;
-        if (ibuf_left == 0) break;
+        if (ibuf_left == 0) return x;
     }
-    while (*iptr < '0' || *iptr > '9') iptr++;
+    while (*iptr < '0' || *iptr > '9') {
+        iptr++;
+        if (iptr - ibuf >= ibuf_left) {
+            ibuf_left = (int)fread(ibuf, 1, BUFSZ, stdin);
+            iptr = ibuf;
+            if (ibuf_left == 0) return x;
+        }
+    }
     while (*iptr >= '0' && *iptr <= '9') {
         x = x * 10 + (*iptr++ - '0');
     }
