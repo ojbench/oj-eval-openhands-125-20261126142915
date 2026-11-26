@@ -10,38 +10,6 @@ using namespace __gnu_pbds;
 // Hash map for coordinate compression - O(1) average lookup
 typedef gp_hash_table<int, int> HashTable;
 
-// Fast I/O with buffer refilling
-static const int BUFSZ = 1 << 20;
-static char ibuf[BUFSZ];
-static char *iptr = ibuf + BUFSZ;
-static int ibuf_left = 0;
-
-inline void io_init() {
-    ibuf_left = (int)fread(ibuf, 1, BUFSZ, stdin);
-    iptr = ibuf;
-}
-
-inline int read_int() {
-    int x = 0;
-    while (iptr - ibuf >= ibuf_left) {
-        ibuf_left = (int)fread(ibuf, 1, BUFSZ, stdin);
-        iptr = ibuf;
-        if (ibuf_left == 0) return x;
-    }
-    while (*iptr < '0' || *iptr > '9') {
-        iptr++;
-        if (iptr - ibuf >= ibuf_left) {
-            ibuf_left = (int)fread(ibuf, 1, BUFSZ, stdin);
-            iptr = ibuf;
-            if (ibuf_left == 0) return x;
-        }
-    }
-    while (*iptr >= '0' && *iptr <= '9') {
-        x = x * 10 + (*iptr++ - '0');
-    }
-    return x;
-}
-
 // DSU with flat arrays and path compression only
 static int dsu_parent[4000005];
 
@@ -71,7 +39,8 @@ static Constraint cons[2000005];
 static int cu[2000005], cv[2000005], ceq[2000005];
 
 void solve() {
-    int n = read_int();
+    int n;
+    scanf("%d", &n);
     
     // Use hash table for coordinate compression
     static HashTable hmap;
@@ -79,9 +48,7 @@ void solve() {
     int next_id = 0;
     
     for (int k = 0; k < n; k++) {
-        cons[k].u = read_int();
-        cons[k].v = read_int();
-        cons[k].eq = read_int();
+        scanf("%d %d %d", &cons[k].u, &cons[k].v, &cons[k].eq);
         
         auto it_u = hmap.find(cons[k].u);
         if (it_u == hmap.end()) {
@@ -123,8 +90,8 @@ void solve() {
 }
 
 int main() {
-    io_init();
-    int t = read_int();
+    int t;
+    scanf("%d", &t);
     while (t--) {
         solve();
     }
